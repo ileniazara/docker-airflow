@@ -5,7 +5,7 @@
 # SOURCE: https://github.com/puckel/docker-airflow
 
 FROM debian:jessie
-MAINTAINER Puckel_
+MAINTAINER puckel_
 
 # Never prompts the user for choices on installation/configuration of packages
 ENV DEBIAN_FRONTEND noninteractive
@@ -43,12 +43,15 @@ RUN set -ex \
         curl \
         netcat \
         locales \
+	wget \
+	git\
     && apt-get install -yqq -t jessie-backports python-requests libpq-dev \
     && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/g' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
     && useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow \
     && pip install pytz==2015.7 \
+    && pip install Cython \
     && pip install cryptography \
     && pip install pyOpenSSL \
     && pip install ndg-httpsclient \
@@ -65,6 +68,8 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
+    
+
 COPY script/entrypoint.sh ${AIRFLOW_HOME}/entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_HOME}/airflow.cfg
 
@@ -75,4 +80,16 @@ EXPOSE 8080 5555 8793
 
 USER airflow
 WORKDIR ${AIRFLOW_HOME}
+RUN wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O ~/miniconda.sh \
+    && bash ~/miniconda.sh -b -p $AIRFLOW_HOME/miniconda
+ENV PATH ${AIRFLOW_HOME}/miniconda/bin:${PATH}
+RUN conda config --add channels r \
+    && conda config --add channels bioconda \
+    && conda config --add channels conda-forge \
+    && conda update conda \
+    && conda install bwa
+
 ENTRYPOINT ["./entrypoint.sh"]
+
+
+
